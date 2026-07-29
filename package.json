@@ -1,0 +1,19 @@
+{
+  "name": "arx-mcp",
+  "version": "0.1.0",
+  "description": "MCP-сервер, що дозволяє AI-асистенту компілювати/запускати/лінтити ArxLang (.arx) код напряму через ArxNode.",
+  "type": "module",
+  "bin": {
+    "arx-mcp": "./src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/smoke.mjs test/transport.mjs"
+  },
+  "license": "MIT",
+  "author": "Faneraiy14",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.24.0"
+  }
+}
