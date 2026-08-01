@@ -22,9 +22,17 @@ npm install
 `dotnet build src/ArxLang` там) — або задай шлях явно:
 
 ```bash
-export ARX_NODE_PATH=/шлях/до/ArxLang.exe   # чи .dll — тоді запускається через `dotnet`
+# Linux/Mac
+export ARX_NODE_PATH=/шлях/до/ArxLang   # .exe на Windows, .dll — тоді запускається через `dotnet`
 # або
 export ARX_ECOSYSTEM_ROOT=/шлях/до/ArxEcosystem
+```
+
+```powershell
+# Windows
+$env:ARX_NODE_PATH = "C:\шлях\до\ArxLang.exe"
+# або
+$env:ARX_ECOSYSTEM_ROOT = "C:\шлях\до\ArxEcosystem"
 ```
 
 ## Підключення (Claude Desktop / Claude Code)
