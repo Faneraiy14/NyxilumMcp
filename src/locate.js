@@ -35,10 +35,17 @@ function defaultEcosystemRoot() {
 // СТАРУ версію ArxLang під виглядом "знайшли exe, все ок". bin/ з
 // dotnet build — єдине джерело, що гарантовано відповідає поточному коду.
 function candidatePaths(root) {
+    // "non-Windows" тут означає "збірка без -windows у TFM" (без GUI-нативів),
+    // а не "не на Windows" — саме такий net10.0-білд і на самій Windows теж
+    // випускає ArxLang.exe (там .exe для будь-якого EXE незалежно від TFM).
+    // На Linux/Mac dotnet build кладе бінарник БЕЗ розширення — назва "ArxLang.exe"
+    // там просто не існує ніколи, тому цей список раніше ніколи нічого не
+    // знаходив поза Windows.
+    const binName = process.platform === 'win32' ? 'ArxLang.exe' : 'ArxLang';
     return {
         nonWindows: [
-            join(root, 'src', 'ArxLang', 'bin', 'Release', 'net10.0', 'ArxLang.exe'),
-            join(root, 'src', 'ArxLang', 'bin', 'Debug', 'net10.0', 'ArxLang.exe'),
+            join(root, 'src', 'ArxLang', 'bin', 'Release', 'net10.0', binName),
+            join(root, 'src', 'ArxLang', 'bin', 'Debug', 'net10.0', binName),
         ],
         windowsFallback: [
             join(root, 'src', 'ArxLang', 'bin', 'Release', 'net10.0-windows', 'ArxLang.exe'),
