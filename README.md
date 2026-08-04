@@ -5,7 +5,7 @@ MCP-сервер, що дозволяє AI-асистенту (Claude, Cursor т
 [ArxNode](https://github.com/Faneraiy14/ArxLang) — без ручного
 `dotnet run`/copy-paste в термінал.
 
-## Навіщо окремий репозиторій, а не частина ArxEcosystem
+## Навіщо окремий репозиторій, а не частина ArxLang
 
 `node_modules` цього проєкту не мав би потрапляти в dotnet-збірку чи
 `publish/` ArxLang. Живе поруч, як сестринський проєкт.
@@ -18,21 +18,21 @@ cd ArxMcp
 npm install
 ```
 
-Потрібен зібраний ArxNode поруч (`../ArxEcosystem` за замовчуванням,
+Потрібен зібраний ArxNode поруч (`../ArxLang` за замовчуванням,
 `dotnet build src/ArxLang` там) — або задай шлях явно:
 
 ```bash
 # Linux/Mac
 export ARX_NODE_PATH=/шлях/до/ArxLang   # .exe на Windows, .dll — тоді запускається через `dotnet`
 # або
-export ARX_ECOSYSTEM_ROOT=/шлях/до/ArxEcosystem
+export ARX_ECOSYSTEM_ROOT=/шлях/до/ArxLang
 ```
 
 ```powershell
 # Windows
 $env:ARX_NODE_PATH = "C:\шлях\до\ArxLang.exe"
 # або
-$env:ARX_ECOSYSTEM_ROOT = "C:\шлях\до\ArxEcosystem"
+$env:ARX_ECOSYSTEM_ROOT = "C:\шлях\до\ArxLang"
 ```
 
 ## Підключення (Claude Desktop / Claude Code)

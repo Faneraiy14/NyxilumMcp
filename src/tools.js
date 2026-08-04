@@ -8,7 +8,9 @@ import { runArxNode } from './run.js';
 import { resolveArxNode } from './locate.js';
 
 function ecosystemRoot() {
-    return process.env.ARX_ECOSYSTEM_ROOT || join(import.meta.dirname, '..', '..', 'ArxEcosystem');
+    // Той самий дефолт, що й у locate.js: "ArxEcosystem" — стара назва,
+    // якої на диску вже нема; GUIDE.md реально лежить у корені ArxLang.
+    return process.env.ARX_ECOSYSTEM_ROOT || join(import.meta.dirname, '..', '..', 'ArxLang');
 }
 
 // RunFile (ArxNode.cs) пише "Runtime Error: ..." / "Parse Error: ..."

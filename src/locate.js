@@ -1,8 +1,8 @@
 // locate.js — знаходить зібраний ArxNode (компілятор/VM ArxLang), щоб
-// запускати його як окремий процес. ArxMcp навмисно живе ПОЗА
-// ArxEcosystem (щоб node_modules не потрапляв у dotnet-збірку/publish),
-// тож шлях до exe/dll треба або задати явно, або вгадати за відомою
-// структурою збірки.
+// запускати його як окремий процес. ArxMcp навмисно живе в ОКРЕМОМУ
+// репозиторії від ArxLang (щоб node_modules не потрапляв у dotnet-збірку/
+// publish), тож шлях до exe/dll треба або задати явно, або вгадати за
+// відомою структурою збірки сусіднього репозиторію.
 //
 // net10.0-windows реєструє GUI-нативи (guiWindow/createCanvas) — вони
 // відкривають РЕАЛЬНІ вікна Windows Forms. Для довільного,
@@ -17,7 +17,12 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 function defaultEcosystemRoot() {
-    return process.env.ARX_ECOSYSTEM_ROOT || join(__dirname, '..', '..', 'ArxEcosystem');
+    // "ArxEcosystem" тут історична назва: обидва репо (ArxMcp, ArxLang)
+    // зараз лежать як звичайні сусіди в ~/Projects, без жодної спільної
+    // обгортки з такою назвою — той старий монорепо-задум не реалізувався,
+    // а дефолт лишився. ARX_ECOSYSTEM_ROOT (ім'я змінної збережено для
+    // зворотної сумісності) без явного значення тепер вказує на ArxLang.
+    return process.env.ARX_ECOSYSTEM_ROOT || join(__dirname, '..', '..', 'ArxLang');
 }
 
 // НЕ фіксований пріоритет "Release завжди перед Debug": реально під час
