@@ -9,6 +9,13 @@
 // ARX_GC_MAX_OBJECTS рахує лише ArxLang-виділення (масиви/структури/
 // мапи) — він НЕ зупинить чистий `while (true) {}` без виділень.
 // Єдиний реальний захист від цього — процесний timeout нижче.
+//
+// ARX_SANDBOX=1 — фіксований прапорець, НЕ винесений у inputSchema
+// нижче: якби виклик міг сам його вимкнути, це б знецінило пісочницю.
+// Під ним ArxLang-рантайм (readFile/writeFile/httpGet/osEnv тощо)
+// обмежує файловий доступ поточною робочою директорією (dir вище) і
+// забороняє мережу й читання змінних середовища — саме тому, що код
+// тут потенційно згенерований ШІ й не заслуговує довіри за замовчуванням.
 
 import { execFile } from 'node:child_process';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
@@ -64,7 +71,7 @@ export async function runArxNode(code, subArgs, options = {}) {
                     maxBuffer: MAX_OUTPUT_BYTES * 4,
                     encoding: 'utf8',
                     windowsHide: true,
-                    env: { ...baseEnv(), ARX_GC_MAX_OBJECTS: String(gcMaxObjects) },
+                    env: { ...baseEnv(), ARX_GC_MAX_OBJECTS: String(gcMaxObjects), ARX_SANDBOX: '1' },
                 },
                 (error, stdout, stderr) => {
                     resolvePromise({
