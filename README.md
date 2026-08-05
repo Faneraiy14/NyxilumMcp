@@ -1,38 +1,38 @@
-# arx-mcp
+# nyxilum-mcp
 
 MCP-сервер, що дозволяє AI-асистенту (Claude, Cursor тощо) напряму
-компілювати/запускати/лінтити/форматувати ArxLang (`.arx`) код через
-[ArxNode](https://github.com/Faneraiy14/ArxLang) — без ручного
+компілювати/запускати/лінтити/форматувати NyxilumLang (`.nx`) код через
+[NyxilumNode](https://github.com/Faneraiy14/NyxilumLang) — без ручного
 `dotnet run`/copy-paste в термінал.
 
-## Навіщо окремий репозиторій, а не частина ArxLang
+## Навіщо окремий репозиторій, а не частина NyxilumLang
 
 `node_modules` цього проєкту не мав би потрапляти в dotnet-збірку чи
-`publish/` ArxLang. Живе поруч, як сестринський проєкт.
+`publish/` NyxilumLang. Живе поруч, як сестринський проєкт.
 
 ## Встановлення
 
 ```bash
-git clone https://github.com/Faneraiy14/ArxMcp.git
-cd ArxMcp
+git clone https://github.com/Faneraiy14/NyxilumMcp.git
+cd NyxilumMcp
 npm install
 ```
 
-Потрібен зібраний ArxNode поруч (`../ArxLang` за замовчуванням,
-`dotnet build src/ArxLang` там) — або задай шлях явно:
+Потрібен зібраний NyxilumNode поруч (`../NyxilumLang` за замовчуванням,
+`dotnet build src/NyxilumLang` там) — або задай шлях явно:
 
 ```bash
 # Linux/Mac
-export ARX_NODE_PATH=/шлях/до/ArxLang   # .exe на Windows, .dll — тоді запускається через `dotnet`
+export NX_NODE_PATH=/шлях/до/NyxilumLang   # .exe на Windows, .dll — тоді запускається через `dotnet`
 # або
-export ARX_ECOSYSTEM_ROOT=/шлях/до/ArxLang
+export NX_ECOSYSTEM_ROOT=/шлях/до/NyxilumLang
 ```
 
 ```powershell
 # Windows
-$env:ARX_NODE_PATH = "C:\шлях\до\ArxLang.exe"
+$env:NX_NODE_PATH = "C:\шлях\до\NyxilumLang.exe"
 # або
-$env:ARX_ECOSYSTEM_ROOT = "C:\шлях\до\ArxLang"
+$env:NX_ECOSYSTEM_ROOT = "C:\шлях\до\NyxilumLang"
 ```
 
 ## Підключення (Claude Desktop / Claude Code)
@@ -40,9 +40,9 @@ $env:ARX_ECOSYSTEM_ROOT = "C:\шлях\до\ArxLang"
 ```json
 {
   "mcpServers": {
-    "arxlang": {
+    "nyxilum": {
       "command": "node",
-      "args": ["/шлях/до/ArxMcp/src/server.js"]
+      "args": ["/шлях/до/NyxilumMcp/src/server.js"]
     }
   }
 }
@@ -52,36 +52,36 @@ $env:ARX_ECOSYSTEM_ROOT = "C:\шлях\до\ArxLang"
 
 | Інструмент | Що робить |
 |---|---|
-| `arxlang_run` | Компілює й виконує код у пісочниці (окремий процес, timeout, ліміт GC-виділень) |
-| `arxlang_lint` | Стильові попередження (довжина рядка, порожні блоки) — **не** перевірка синтаксису, завжди exitCode=0 |
-| `arxlang_format` | Форматує код |
-| `arxlang_version` | Версія знайденого ArxNode — заодно health check |
-| `arxlang_docs` | GUIDE.md цілком або конкретна секція (`### `-заголовок) за назвою |
+| `nyxilum_run` | Компілює й виконує код у пісочниці (окремий процес, timeout, ліміт GC-виділень) |
+| `nyxilum_lint` | Стильові попередження (довжина рядка, порожні блоки) — **не** перевірка синтаксису, завжди exitCode=0 |
+| `nyxilum_format` | Форматує код |
+| `nyxilum_version` | Версія знайденого NyxilumNode — заодно health check |
+| `nyxilum_docs` | GUIDE.md цілком або конкретна секція (`### `-заголовок) за назвою |
 
-## Безпека виконання (`arxlang_run`)
+## Безпека виконання (`nyxilum_run`)
 
 - Код НІКОЛИ не потрапляє в shell/argv як текст — завжди пишеться у
   власний тимчасовий файл, шлях до якого передається як звичайний
   аргумент процесу (`execFile`, без `shell: true`).
 - Процесний `timeout` (типово 10с, максимум 60с) — єдиний реальний
-  захист від `while (true) {}` без виділень пам'яті: `ARX_GC_MAX_OBJECTS`
-  рахує лише ArxLang-виділення (масиви/структури/мапи), а не ітерації
+  захист від `while (true) {}` без виділень пам'яті: `NX_GC_MAX_OBJECTS`
+  рахує лише NyxilumLang-виділення (масиви/структури/мапи), а не ітерації
   циклу самі по собі.
 - `env` — allowlist (`PATH`, `SystemRoot`, `TEMP`, `DOTNET_ROOT` тощо),
   не весь `process.env` цього серверного процесу.
-- `ARX_SANDBOX=1` (фіксовано, не залежить від вхідних аргументів
+- `NX_SANDBOX=1` (фіксовано, не залежить від вхідних аргументів
   інструмента) — файловий I/O обмежується тимчасовою текою запуску,
   мережа (`httpGet`/`httpServer`/`wsConnect` тощо) й читання змінних
-  середовища (`osEnv`) повністю заборонені. Потребує ArxNode з
-  підтримкою `ARX_SANDBOX` (див. [ArxLang README](https://github.com/Faneraiy14/ArxLang#пісочниця-для-ненадійного-коду));
+  середовища (`osEnv`) повністю заборонені. Потребує NyxilumNode з
+  підтримкою `NX_SANDBOX` (див. [NyxilumLang README](https://github.com/Faneraiy14/NyxilumLang#пісочниця-для-ненадійного-коду));
   зі старішим бінарником прапорець просто ігнорується.
 - Вивід (`stdout`/`stderr`) обрізається до 32 КБ на потік — цикл, що
   друкує мільйони рядків, не заповнить контекст відповіді.
 - Тимчасова тека видаляється в `finally` завжди, навіть при таймауті.
 
-`RunFile` в ArxNode.cs пише `Runtime Error:`/`Parse Error:` у **stdout**
+`RunFile` в Nx.cs пише `Runtime Error:`/`Parse Error:` у **stdout**
 (не stderr) і завершується з `exitCode=1` — це поведінка самого
-ArxNode, не цього сервера; кожен інструмент явно зазначає це в описі.
+NyxilumNode, не цього сервера; кожен інструмент явно зазначає це в описі.
 
 ## Тести
 

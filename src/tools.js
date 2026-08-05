@@ -4,21 +4,21 @@
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { runArxNode } from './run.js';
-import { resolveArxNode } from './locate.js';
+import { runNyxilumNode } from './run.js';
+import { resolveNyxilumNode } from './locate.js';
 
 function ecosystemRoot() {
-    // Той самий дефолт, що й у locate.js: "ArxEcosystem" — стара назва,
-    // якої на диску вже нема; GUIDE.md реально лежить у корені ArxLang.
-    return process.env.ARX_ECOSYSTEM_ROOT || join(import.meta.dirname, '..', '..', 'ArxLang');
+    // Той самий дефолт, що й у locate.js: "NyxilumEcosystem" — стара назва,
+    // якої на диску вже нема; GUIDE.md реально лежить у корені NyxilumLang.
+    return process.env.NX_ECOSYSTEM_ROOT || join(import.meta.dirname, '..', '..', 'NyxilumLang');
 }
 
-// RunFile (ArxNode.cs) пише "Runtime Error: ..." / "Parse Error: ..."
+// RunFile (NyxilumNode.cs) пише "Runtime Error: ..." / "Parse Error: ..."
 // у STDOUT через Console.WriteLine, а не в stderr — це не хиба цього
-// MCP-сервера, а поведінка самого ArxNode. Той, хто читає ці tools,
+// MCP-сервера, а поведінка самого NyxilumNode. Той, хто читає ці tools,
 // має дивитись у stdout за помилками, не лише в exitCode.
-export async function arxlangRun({ code, timeout_ms, gc_max_objects }) {
-    const result = await runArxNode(code, [], { timeoutMs: timeout_ms, gcMaxObjects: gc_max_objects });
+export async function nyxilumRun({ code, timeout_ms, gc_max_objects }) {
+    const result = await runNyxilumNode(code, [], { timeoutMs: timeout_ms, gcMaxObjects: gc_max_objects });
     return {
         ...result,
         note: 'Помилки виконання (Runtime/Parse Error) з\'являються у stdout з exitCode=1, а не в stderr.',
@@ -28,22 +28,22 @@ export async function arxlangRun({ code, timeout_ms, gc_max_objects }) {
 // Linter.cs — це лише стильовий репортер (довжина рядка, порожні
 // блоки, невикористані var), а НЕ перевірка синтаксису: він завжди
 // повертає код 0, навіть якщо лексер провалився всередині. Для
-// реальної валідації синтаксису використовуй arxlang_run.
-export async function arxlangLint({ code, timeout_ms }) {
-    const result = await runArxNode(code, ['lint'], { timeoutMs: timeout_ms });
+// реальної валідації синтаксису використовуй nyxilum_run.
+export async function nyxilumLint({ code, timeout_ms }) {
+    const result = await runNyxilumNode(code, ['lint'], { timeoutMs: timeout_ms });
     return {
         ...result,
-        note: 'lint — лише стильові попередження, завжди exitCode=0, НЕ перевіряє синтаксис. Для валідації коду використовуй arxlang_run.',
+        note: 'lint — лише стильові попередження, завжди exitCode=0, НЕ перевіряє синтаксис. Для валідації коду використовуй nyxilum_run.',
     };
 }
 
-export async function arxlangFormat({ code, timeout_ms }) {
-    const result = await runArxNode(code, ['format'], { timeoutMs: timeout_ms });
+export async function nyxilumFormat({ code, timeout_ms }) {
+    const result = await runNyxilumNode(code, ['format'], { timeoutMs: timeout_ms });
     return result;
 }
 
-export async function arxlangVersion() {
-    const result = await runArxNode('func main() {}', ['--version'], { timeoutMs: 5000 });
+export async function nyxilumVersion() {
+    const result = await runNyxilumNode('func main() {}', ['--version'], { timeoutMs: 5000 });
     return result;
 }
 
@@ -51,7 +51,7 @@ export async function arxlangVersion() {
 // виклик, але й не подавати застарілий вміст після редагування мови.
 let guideCache = null;
 
-export async function arxlangDocs({ section } = {}) {
+export async function nyxilumDocs({ section } = {}) {
     const guidePath = join(ecosystemRoot(), 'GUIDE.md');
     const stat = await readFile(guidePath, 'utf8').then(
         (text) => ({ text }),
@@ -94,6 +94,6 @@ function splitBySections(markdown) {
     return sections;
 }
 
-export function arxNodeHealthPath() {
-    return resolveArxNode().path;
+export function nyxilumNodeHealthPath() {
+    return resolveNyxilumNode().path;
 }

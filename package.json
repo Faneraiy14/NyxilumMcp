@@ -1,10 +1,10 @@
 {
-  "name": "arx-mcp",
-  "version": "0.1.0",
-  "description": "MCP-сервер, що дозволяє AI-асистенту компілювати/запускати/лінтити ArxLang (.arx) код напряму через ArxNode.",
+  "name": "nyxilum-mcp",
+  "version": "0.2.0",
+  "description": "MCP-сервер, що дозволяє AI-асистенту компілювати/запускати/лінтити NyxilumLang (.nx) код напряму через NyxilumNode.",
   "type": "module",
   "bin": {
-    "arx-mcp": "./src/server.js"
+    "nyxilum-mcp": "./src/server.js"
   },
   "scripts": {
     "start": "node src/server.js",

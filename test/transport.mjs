@@ -29,19 +29,19 @@ test('tools/list повертає всі 5 зареєстрованих інст
         const { tools } = await client.listTools();
         const names = tools.map((t) => t.name).sort();
         assert.deepEqual(names, [
-            'arxlang_docs',
-            'arxlang_format',
-            'arxlang_lint',
-            'arxlang_run',
-            'arxlang_version',
+            'nyxilum_docs',
+            'nyxilum_format',
+            'nyxilum_lint',
+            'nyxilum_run',
+            'nyxilum_version',
         ]);
     });
 });
 
-test('tools/call arxlang_run через реальний MCP-протокол', async () => {
+test('tools/call nyxilum_run через реальний MCP-протокол', async () => {
     await withClient(async (client) => {
         const result = await client.callTool({
-            name: 'arxlang_run',
+            name: 'nyxilum_run',
             arguments: { code: 'func main() { print("з протоколу") }' },
         });
         const payload = JSON.parse(result.content[0].text);
@@ -52,7 +52,7 @@ test('tools/call arxlang_run через реальний MCP-протокол', 
 
 test('tools/call з невалідними аргументами повертає isError, не викидає', async () => {
     await withClient(async (client) => {
-        const result = await client.callTool({ name: 'arxlang_run', arguments: { code: 123 } });
+        const result = await client.callTool({ name: 'nyxilum_run', arguments: { code: 123 } });
         assert.equal(result.isError, true);
         assert.match(result.content[0].text, /Invalid arguments|validation/i);
     });

@@ -1,6 +1,6 @@
-// locate.js — знаходить зібраний ArxNode (компілятор/VM ArxLang), щоб
-// запускати його як окремий процес. ArxMcp навмисно живе в ОКРЕМОМУ
-// репозиторії від ArxLang (щоб node_modules не потрапляв у dotnet-збірку/
+// locate.js — знаходить зібраний NyxilumNode (компілятор/VM NyxilumLang), щоб
+// запускати його як окремий процес. NyxilumMcp навмисно живе в ОКРЕМОМУ
+// репозиторії від NyxilumLang (щоб node_modules не потрапляв у dotnet-збірку/
 // publish), тож шлях до exe/dll треба або задати явно, або вгадати за
 // відомою структурою збірки сусіднього репозиторію.
 //
@@ -17,12 +17,12 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 function defaultEcosystemRoot() {
-    // "ArxEcosystem" тут історична назва: обидва репо (ArxMcp, ArxLang)
+    // "NyxilumEcosystem" тут історична назва: обидва репо (NyxilumMcp, NyxilumLang)
     // зараз лежать як звичайні сусіди в ~/Projects, без жодної спільної
     // обгортки з такою назвою — той старий монорепо-задум не реалізувався,
-    // а дефолт лишився. ARX_ECOSYSTEM_ROOT (ім'я змінної збережено для
-    // зворотної сумісності) без явного значення тепер вказує на ArxLang.
-    return process.env.ARX_ECOSYSTEM_ROOT || join(__dirname, '..', '..', 'ArxLang');
+    // а дефолт лишився. NX_ECOSYSTEM_ROOT (ім'я змінної збережено для
+    // зворотної сумісності) без явного значення тепер вказує на NyxilumLang.
+    return process.env.NX_ECOSYSTEM_ROOT || join(__dirname, '..', '..', 'NyxilumLang');
 }
 
 // НЕ фіксований пріоритет "Release завжди перед Debug": реально під час
@@ -37,24 +37,28 @@ function defaultEcosystemRoot() {
 // publish/win-x64 навмисно НЕ в цьому списку: це заморожений артефакт
 // GitHub Release (створюється вручну, окремо від dotnet build) — він
 // не оновлюється разом із джерельним кодом і мовчки підсовував би
-// СТАРУ версію ArxLang під виглядом "знайшли exe, все ок". bin/ з
+// СТАРУ версію NyxilumLang під виглядом "знайшли exe, все ок". bin/ з
 // dotnet build — єдине джерело, що гарантовано відповідає поточному коду.
 function candidatePaths(root) {
     // "non-Windows" тут означає "збірка без -windows у TFM" (без GUI-нативів),
     // а не "не на Windows" — саме такий net10.0-білд і на самій Windows теж
-    // випускає ArxLang.exe (там .exe для будь-якого EXE незалежно від TFM).
-    // На Linux/Mac dotnet build кладе бінарник БЕЗ розширення — назва "ArxLang.exe"
+    // випускає Nx.exe (там .exe для будь-якого EXE незалежно від TFM).
+    // На Linux/Mac dotnet build кладе бінарник БЕЗ розширення — назва "Nx.exe"
     // там просто не існує ніколи, тому цей список раніше ніколи нічого не
     // знаходив поза Windows.
-    const binName = process.platform === 'win32' ? 'ArxLang.exe' : 'ArxLang';
+    //
+    // Бінарник називається "Nx" (AssemblyName у NyxilumLang.csproj), НЕ
+    // "NyxilumLang" — те, що проєкт/репозиторій і команда мають різні
+    // назви, навмисне: короткий CLI-бінарник окремо від довгої назви мови.
+    const binName = process.platform === 'win32' ? 'Nx.exe' : 'Nx';
     return {
         nonWindows: [
-            join(root, 'src', 'ArxLang', 'bin', 'Release', 'net10.0', binName),
-            join(root, 'src', 'ArxLang', 'bin', 'Debug', 'net10.0', binName),
+            join(root, 'src', 'NyxilumLang', 'bin', 'Release', 'net10.0', binName),
+            join(root, 'src', 'NyxilumLang', 'bin', 'Debug', 'net10.0', binName),
         ],
         windowsFallback: [
-            join(root, 'src', 'ArxLang', 'bin', 'Release', 'net10.0-windows', 'ArxLang.exe'),
-            join(root, 'src', 'ArxLang', 'bin', 'Debug', 'net10.0-windows', 'ArxLang.exe'),
+            join(root, 'src', 'NyxilumLang', 'bin', 'Release', 'net10.0-windows', 'Nx.exe'),
+            join(root, 'src', 'NyxilumLang', 'bin', 'Debug', 'net10.0-windows', 'Nx.exe'),
         ],
     };
 }
@@ -72,11 +76,11 @@ function newestExisting(paths) {
 /**
  * @returns {{ cmd: string, preArgs: string[], path: string }}
  */
-export function resolveArxNode() {
-    const explicit = process.env.ARX_NODE_PATH;
+export function resolveNyxilumNode() {
+    const explicit = process.env.NX_NODE_PATH;
     if (explicit) {
         if (!existsSync(explicit)) {
-            throw new Error(`ARX_NODE_PATH задано, але файл не знайдено: ${explicit}`);
+            throw new Error(`NX_NODE_PATH задано, але файл не знайдено: ${explicit}`);
         }
         return toInvocation(explicit);
     }
@@ -89,9 +93,9 @@ export function resolveArxNode() {
 
     const tried = [...nonWindows, ...windowsFallback];
     throw new Error(
-        'Не знайдено зібраний ArxNode. Перевірені шляхи:\n' +
+        'Не знайдено зібраний NyxilumNode. Перевірені шляхи:\n' +
         tried.map((p) => `  - ${p}`).join('\n') +
-        '\nЗадай ARX_NODE_PATH (шлях до ArxLang.exe або .dll) або ARX_ECOSYSTEM_ROOT (корінь ArxEcosystem) вручну.'
+        '\nЗадай NX_NODE_PATH (шлях до Nx.exe або .dll) або NX_ECOSYSTEM_ROOT (корінь NyxilumEcosystem) вручну.'
     );
 }
 

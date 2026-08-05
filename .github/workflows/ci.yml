@@ -9,47 +9,47 @@ on:
 jobs:
   test:
     # Тести (test/smoke.mjs, test/transport.mjs) реально запускають
-    # arxlang_run/arxlang_lint/... через СПРАВЖНІЙ ArxNode-бінарник, не
-    # мокають його — тому потрібен зібраний ArxLang. ARX_NODE_PATH
+    # nyxilum_run/nyxilum_lint/... через СПРАВЖНІЙ NyxilumNode-бінарник,
+    # не мокають його — тому потрібен зібраний NyxilumLang. NX_NODE_PATH
     # вказує на нього напряму, обходячи locate.js-евристику (та шукає
-    # ArxEcosystem/... — структуру, якої в CI-чекауті нема).
+    # NyxilumEcosystem/... — структуру, якої в CI-чекауті нема).
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout ArxMcp
+      - name: Checkout NyxilumMcp
         uses: actions/checkout@v4
         with:
-          path: ArxMcp
+          path: NyxilumMcp
 
-      - name: Checkout ArxLang (виконує тестований код)
+      - name: Checkout NyxilumLang (виконує тестований код)
         uses: actions/checkout@v4
         with:
-          repository: Faneraiy14/ArxLang
-          path: ArxLang
+          repository: Faneraiy14/NyxilumLang
+          path: NyxilumLang
 
-      - name: Checkout ArxDb (залежність ArxLang.csproj)
+      - name: Checkout NyxilumDb (залежність NyxilumLang.csproj)
         uses: actions/checkout@v4
         with:
-          repository: Faneraiy14/ArxDb
-          path: ArxDb
+          repository: Faneraiy14/NyxilumDb
+          path: NyxilumDb
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Build ArxLang (net10.0)
-        working-directory: ArxLang
-        run: dotnet build src/ArxLang -f net10.0 -p:EnableWindowsTargeting=true --configuration Release
+      - name: Build NyxilumLang (net10.0)
+        working-directory: NyxilumLang
+        run: dotnet build src/NyxilumLang -f net10.0 -p:EnableWindowsTargeting=true --configuration Release
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: npm ci
-        working-directory: ArxMcp
+        working-directory: NyxilumMcp
         run: npm ci
 
       - name: npm test
-        working-directory: ArxMcp
+        working-directory: NyxilumMcp
         env:
-          ARX_NODE_PATH: ${{ github.workspace }}/ArxLang/src/ArxLang/bin/Release/net10.0/ArxLang
+          NX_NODE_PATH: ${{ github.workspace }}/NyxilumLang/src/NyxilumLang/bin/Release/net10.0/Nx
         run: npm test
