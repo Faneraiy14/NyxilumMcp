@@ -2,7 +2,7 @@
 
 MCP-сервер, що дозволяє AI-асистенту (Claude, Cursor тощо) напряму
 компілювати/запускати/лінтити/форматувати NyxilumLang (`.nx`) код через
-[NyxilumNode](https://github.com/Faneraiy14/NyxilumLang) — без ручного
+[NyxilumNode](https://github.com/Faneraiy14/NyxilumNode) — без ручного
 `dotnet run`/copy-paste в термінал.
 
 ## Навіщо окремий репозиторій, а не частина NyxilumLang
