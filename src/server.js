@@ -5,6 +5,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { nyxilumRun, nyxilumLint, nyxilumFormat, nyxilumCheck, nyxilumVersion, nyxilumDocs } from './tools.js';
+import { nyxilumDevBuild, nyxilumDevTest } from './dev.js';
 
 const server = new McpServer({ name: 'nyxilum-mcp', version: '0.1.0' });
 
@@ -100,6 +101,43 @@ server.registerTool(
     async (args) => {
         const result = await nyxilumDocs(args);
         return { content: [{ type: 'text', text: result.success ? result.content : `Помилка: ${result.error}` }] };
+    }
+);
+
+const devTimeoutSchema = z.number().int().min(1000).max(300_000).optional()
+    .describe('Таймаут виконання в мілісекундах (1000–300000, типово 120000 для build, 180000 для test)');
+
+server.registerTool(
+    'nyxilum_dev_build',
+    {
+        title: 'Зібрати NyxilumLang з джерела',
+        description:
+            'dotnet build самого репозиторію NyxilumLang (net10.0, без Windows Forms/GUI-нативів). ' +
+            'НЕ пісочниться — на відміну від nyxilum_run/nyxilum_check, тут немає довільного .nx-коду від виклику, ' +
+            'лише збірка довіреного джерельного дерева мови. Виклич перед nyxilum_dev_test після зміни C#-коду мови.',
+        inputSchema: {
+            configuration: z.enum(['Debug', 'Release']).optional().describe('Конфігурація збірки, типово Debug'),
+            timeout_ms: devTimeoutSchema,
+        },
+    },
+    async (args) => {
+        const result = await nyxilumDevBuild(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+);
+
+server.registerTool(
+    'nyxilum_dev_test',
+    {
+        title: 'Прогнати тестовий набір NyxilumLang',
+        description:
+            'tests/run_all.sh самого репозиторію NyxilumLang проти щойно зібраного бінарника (NX_EXE - той самий, ' +
+            'що знаходить nyxilum_version). Потребує попереднього nyxilum_dev_build, якщо збірки ще нема.',
+        inputSchema: { timeout_ms: devTimeoutSchema },
+    },
+    async (args) => {
+        const result = await nyxilumDevTest(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
 );
 

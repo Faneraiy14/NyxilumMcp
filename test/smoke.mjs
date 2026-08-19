@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { nyxilumRun, nyxilumLint, nyxilumCheck, nyxilumDocs, nyxilumVersion } from '../src/tools.js';
+import { nyxilumDevBuild, nyxilumDevTest } from '../src/dev.js';
 
 async function countTempDirs() {
     const entries = await readdir(tmpdir()).catch(() => []);
@@ -98,6 +99,21 @@ test('nyxilum_version: повертає версію NyxilumNode', async () => {
     // Бінарник називається "Nx" (AssemblyName), не "NyxilumNode" —
     // той самий поділ "проєкт vs команда", що й у locate.js.
     assert.match(result.stdout, /Nx v\d+\.\d+\.\d+/);
+});
+
+// Реальний dotnet build/test-прогін самого NyxilumLang - повільніше за
+// решту smoke-тестів (десятки секунд), але саме тому, що це не мокається:
+// це той самий цикл, яким сам розробник мови перевіряє C#-зміни.
+test('nyxilum_dev_build: реальний dotnet build репозиторію NyxilumLang проходить', { timeout: 120_000 }, async () => {
+    const result = await nyxilumDevBuild({});
+    assert.equal(result.success, true, `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    assert.equal(result.exitCode, 0);
+});
+
+test('nyxilum_dev_test: tests/run_all.sh проти щойно зібраного бінарника проходить', { timeout: 180_000 }, async () => {
+    const result = await nyxilumDevTest({});
+    assert.equal(result.success, true, `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    assert.match(result.stdout, /Провалено: 0/);
 });
 
 test('немає витоку тимчасових директорій після серії запусків', async () => {

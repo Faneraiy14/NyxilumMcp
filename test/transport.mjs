@@ -24,12 +24,14 @@ async function withClient(fn) {
     }
 }
 
-test('tools/list повертає всі 6 зареєстрованих інструментів', async () => {
+test('tools/list повертає всі 8 зареєстрованих інструментів', async () => {
     await withClient(async (client) => {
         const { tools } = await client.listTools();
         const names = tools.map((t) => t.name).sort();
         assert.deepEqual(names, [
             'nyxilum_check',
+            'nyxilum_dev_build',
+            'nyxilum_dev_test',
             'nyxilum_docs',
             'nyxilum_format',
             'nyxilum_lint',

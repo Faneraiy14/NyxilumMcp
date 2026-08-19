@@ -58,6 +58,8 @@ $env:NX_ECOSYSTEM_ROOT = "C:\шлях\до\NyxilumLang"
 | `nyxilum_format` | Форматує код |
 | `nyxilum_version` | Версія знайденого NyxilumNode — заодно health check |
 | `nyxilum_docs` | GUIDE.md цілком або конкретна секція (`### `-заголовок) за назвою |
+| `nyxilum_dev_build` | `dotnet build` самого репозиторію NyxilumLang (розробка мови, НЕ пісочниться — джерело довірене, не довільний `.nx`-код) |
+| `nyxilum_dev_test` | `tests/run_all.sh` NyxilumLang проти щойно зібраного бінарника |
 
 ## Безпека виконання (`nyxilum_run`)
 
@@ -83,6 +85,16 @@ $env:NX_ECOSYSTEM_ROOT = "C:\шлях\до\NyxilumLang"
 `RunFile` в Nx.cs пише `Runtime Error:`/`Parse Error:` у **stdout**
 (не stderr) і завершується з `exitCode=1` — це поведінка самого
 NyxilumNode, не цього сервера; кожен інструмент явно зазначає це в описі.
+
+### `nyxilum_dev_build`/`nyxilum_dev_test` — інша модель довіри
+
+Ці два НЕ пісочняться (немає `NX_SANDBOX`, немає env-allowlist, немає
+тимчасового файлу з кодом): вони запускають `dotnet build`/`tests/run_all.sh`
+над самим репозиторієм NyxilumLang, а не над довільним `.nx`-кодом від
+виклику. Викликач не передає жодного тексту, який міг би потрапити в
+команду — лише опційні `configuration`/`timeout_ms`. Призначені для
+розробки самої мови (зміна C#-коду VM/компілятора), не для перевірки
+недовіреного коду — для того лишаються `nyxilum_run`/`nyxilum_check`.
 
 ## Тести
 
