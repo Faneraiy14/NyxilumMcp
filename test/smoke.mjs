@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { nyxilumRun, nyxilumLint, nyxilumDocs, nyxilumVersion } from '../src/tools.js';
+import { nyxilumRun, nyxilumLint, nyxilumCheck, nyxilumDocs, nyxilumVersion } from '../src/tools.js';
 
 async function countTempDirs() {
     const entries = await readdir(tmpdir()).catch(() => []);
@@ -54,6 +54,25 @@ test('nyxilum_run: код із shell-метасимволами виконуєт
     const result = await nyxilumRun({ code: 'func main() { print("$(whoami) & calc.exe ; rm -rf /") }' });
     assert.equal(result.success, true);
     assert.match(result.stdout, /\$\(whoami\)/);
+});
+
+test('nyxilum_check: коректний код проходить синтаксичну перевірку', async () => {
+    const result = await nyxilumCheck({ code: 'func main() { print("hello") }' });
+    assert.equal(result.exitCode, 0);
+});
+
+test('nyxilum_check: синтаксична помилка дає Parse Error у STDOUT, exitCode=1, БЕЗ виконання', async () => {
+    const result = await nyxilumCheck({ code: 'func main() { print("не закрита дужка" }' });
+    assert.equal(result.exitCode, 1);
+    assert.match(result.stdout, /Parse Error/);
+});
+
+test('nyxilum_check: НЕ виконує код (на відміну від nyxilum_run) - побічний ефект не спрацьовує', async () => {
+    // Валідний синтаксис, throw - валідатор мав би зупинитись на парсингу,
+    // не дійшовши до виконання, тож помилки виконання тут не буде.
+    const result = await nyxilumCheck({ code: 'func main() { throw "мало НЕ виконатись" }' });
+    assert.equal(result.exitCode, 0);
+    assert.doesNotMatch(result.stdout, /Runtime Error/);
 });
 
 test('nyxilum_lint: завжди exitCode=0, навіть на кострубатому коді', async () => {

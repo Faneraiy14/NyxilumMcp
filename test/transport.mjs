@@ -24,17 +24,30 @@ async function withClient(fn) {
     }
 }
 
-test('tools/list повертає всі 5 зареєстрованих інструментів', async () => {
+test('tools/list повертає всі 6 зареєстрованих інструментів', async () => {
     await withClient(async (client) => {
         const { tools } = await client.listTools();
         const names = tools.map((t) => t.name).sort();
         assert.deepEqual(names, [
+            'nyxilum_check',
             'nyxilum_docs',
             'nyxilum_format',
             'nyxilum_lint',
             'nyxilum_run',
             'nyxilum_version',
         ]);
+    });
+});
+
+test('tools/call nyxilum_check через реальний MCP-протокол', async () => {
+    await withClient(async (client) => {
+        const result = await client.callTool({
+            name: 'nyxilum_check',
+            arguments: { code: 'func main() { print("з протоколу" }' },
+        });
+        const payload = JSON.parse(result.content[0].text);
+        assert.equal(payload.exitCode, 1);
+        assert.match(payload.stdout, /Parse Error/);
     });
 });
 

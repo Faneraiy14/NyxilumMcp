@@ -4,7 +4,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { nyxilumRun, nyxilumLint, nyxilumFormat, nyxilumVersion, nyxilumDocs } from './tools.js';
+import { nyxilumRun, nyxilumLint, nyxilumFormat, nyxilumCheck, nyxilumVersion, nyxilumDocs } from './tools.js';
 
 const server = new McpServer({ name: 'nyxilum-mcp', version: '0.1.0' });
 
@@ -55,6 +55,22 @@ server.registerTool(
     },
     async (args) => {
         const result = await nyxilumFormat(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+);
+
+server.registerTool(
+    'nyxilum_check',
+    {
+        title: 'Перевірити синтаксис NyxilumLang-коду',
+        description:
+            'Лише лексер+парсер (побудова AST) — код НЕ виконується, компіляція в байткод не відбувається. ' +
+            'Дешевша й безпечніша перевірка "чи взагалі парситься", ніж nyxilum_run, для коду, який ще не готовий запускатись. ' +
+            'Помилки (Parse Error) з\'являються у полі stdout з exitCode=1, а НЕ в stderr.',
+        inputSchema: { code: z.string(), timeout_ms: timeoutSchema },
+    },
+    async (args) => {
+        const result = await nyxilumCheck(args);
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
 );

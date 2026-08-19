@@ -2,7 +2,7 @@
 // MCP SDK. Винесено окремо, щоб їх можна було викликати напряму в
 // тестах (node:test) без піднімання реального MCP-транспорту.
 
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { runNyxilumNode } from './run.js';
 import { resolveNyxilumNode } from './locate.js';
@@ -42,29 +42,57 @@ export async function nyxilumFormat({ code, timeout_ms }) {
     return result;
 }
 
+// nx check - лише лексер+парсер (побудова AST), без компіляції в
+// байткод і без виконання: на відміну від nyxilum_lint (стиль, завжди
+// exitCode=0) це РЕАЛЬНА перевірка синтаксису, але дешевша й безпечніша
+// за nyxilum_run для коду, який ще не мав виконуватись узагалі (change
+// зі скрипта, довжелезний цикл, що ще не готовий запускатись) - немає
+// сенсу гонити GC-ліміт/timeout заради самого лише "чи взагалі
+// парситься".
+export async function nyxilumCheck({ code, timeout_ms }) {
+    const result = await runNyxilumNode(code, ['check'], { timeoutMs: timeout_ms });
+    return {
+        ...result,
+        note: 'check — лише синтаксис (лексер+парсер), код НЕ виконується. Помилки — Parse Error у stdout з exitCode=1.',
+    };
+}
+
 export async function nyxilumVersion() {
     const result = await runNyxilumNode('func main() {}', ['--version'], { timeoutMs: 5000 });
     return result;
 }
 
-// Кешується за mtime GUIDE.md, щоб не перечитувати файл на кожен
-// виклик, але й не подавати застарілий вміст після редагування мови.
-let guideCache = null;
+// Кешується за mtime GUIDE.md: readFile на кожен виклик (навіть без
+// зміни файлу) означало б диск-I/O на щоразовий запит документації від
+// AI-асистента, який може питати секцію за секцією поспіль. mtimeMs
+// у кеші - readFile пропускається, лише якщо файл ТОЧНО не змінювався
+// відтоді (не таймер/TTL, а справжня перевірка свіжості).
+let guideCache = null; // { mtimeMs: number, text: string } | null
 
 export async function nyxilumDocs({ section } = {}) {
     const guidePath = join(ecosystemRoot(), 'GUIDE.md');
-    const stat = await readFile(guidePath, 'utf8').then(
-        (text) => ({ text }),
-        (err) => ({ error: err.message })
-    );
-    if (stat.error) {
-        return { success: false, error: `Не вдалося прочитати GUIDE.md: ${stat.error}` };
+
+    let mtimeMs;
+    try {
+        mtimeMs = (await stat(guidePath)).mtimeMs;
+    } catch (err) {
+        return { success: false, error: `Не вдалося прочитати GUIDE.md: ${err.message}` };
     }
 
-    guideCache = stat.text;
-    if (!section) return { success: true, content: guideCache };
+    if (!guideCache || guideCache.mtimeMs !== mtimeMs) {
+        let text;
+        try {
+            text = await readFile(guidePath, 'utf8');
+        } catch (err) {
+            return { success: false, error: `Не вдалося прочитати GUIDE.md: ${err.message}` };
+        }
+        guideCache = { mtimeMs, text };
+    }
 
-    const sections = splitBySections(guideCache);
+    const guideText = guideCache.text;
+    if (!section) return { success: true, content: guideText };
+
+    const sections = splitBySections(guideText);
     const match = sections.find((s) => s.heading.toLowerCase().includes(section.toLowerCase()));
     if (!match) {
         return {

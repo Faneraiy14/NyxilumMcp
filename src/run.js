@@ -60,6 +60,7 @@ export async function runNyxilumNode(code, subArgs, options = {}) {
     try {
         await writeFile(file, code, 'utf8');
 
+        let childPid;
         const result = await new Promise((resolvePromise) => {
             const child = execFile(
                 cmd,
@@ -81,13 +82,25 @@ export async function runNyxilumNode(code, subArgs, options = {}) {
                     });
                 }
             );
-            // execFile сам вбиває дитину при таймауті, але на Windows
-            // .exe інколи лишає дочірні процеси — targeted taskkill /T
-            // добиває все дерево, а не лише сам NyxilumLang.exe.
-            child.on('exit', () => {});
+            childPid = child.pid;
         });
 
         const timedOut = result.error?.killed === true || result.error?.signal === 'SIGKILL' || result.error?.signal === 'SIGTERM';
+
+        // execFile сам вбиває дитину при таймауті (killSignal вище), але на
+        // Windows TerminateProcess зупиняє лише сам NyxilumLang.exe, не
+        // дочірні процеси, які він міг встигнути запустити (напр. через
+        // procStart/procRun) - targeted taskkill /T добиває все дерево.
+        // Поза NX_SANDBOX=1 (яку execFile завжди вмикає вище) procStart/
+        // procRun самі кинули б помилку, тож на практиці дерево дітей у
+        // NyxilumLang зараз узагалі не з'явиться - це страховка на майбутнє,
+        // не компенсація за відому діру.
+        if (timedOut && process.platform === 'win32' && childPid) {
+            await new Promise((resolveCleanup) => {
+                execFile('taskkill', ['/pid', String(childPid), '/T', '/F'], () => resolveCleanup());
+            });
+        }
+
         const exitCode = typeof result.error?.code === 'number' ? result.error.code : (result.error ? 1 : 0);
 
         const outTrunc = truncate(result.stdout);
