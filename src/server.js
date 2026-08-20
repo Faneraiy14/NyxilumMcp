@@ -95,7 +95,7 @@ server.registerTool(
         title: 'Документація NyxilumLang',
         description: 'Повертає GUIDE.md (синтаксис NyxilumLang) цілком або конкретну секцію за назвою заголовка.',
         inputSchema: {
-            section: z.string().optional().describe('Частина назви заголовка ## для фільтрації, напр. "Мапи"'),
+            section: z.string().optional().describe('Частина назви заголовка ### для фільтрації, напр. "Мапи"'),
         },
     },
     async (args) => {
