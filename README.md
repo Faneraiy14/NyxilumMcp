@@ -1,16 +1,18 @@
 # nyxilum-mcp
 
-MCP-сервер, що дозволяє AI-асистенту (Claude, Cursor тощо) напряму
-компілювати/запускати/лінтити/форматувати NyxilumLang (`.nx`) код через
-[NyxilumNode](https://github.com/Faneraiy14/NyxilumNode) — без ручного
-`dotnet run`/copy-paste в термінал.
+*[Українською](README.uk.md)*
 
-## Навіщо окремий репозиторій, а не частина NyxilumLang
+An MCP server that lets an AI assistant (Claude, Cursor, etc.) directly
+compile/run/lint/format NyxilumLang (`.nx`) code via
+[NyxilumNode](https://github.com/Faneraiy14/NyxilumNode) — without manual
+`dotnet run`/copy-paste into a terminal.
 
-`node_modules` цього проєкту не мав би потрапляти в dotnet-збірку чи
-`publish/` NyxilumLang. Живе поруч, як сестринський проєкт.
+## Why a separate repo instead of part of NyxilumLang
 
-## Встановлення
+This project's `node_modules` shouldn't end up in NyxilumLang's dotnet build or
+`publish/`. It lives alongside it, as a sibling project.
+
+## Installation
 
 ```bash
 git clone https://github.com/Faneraiy14/NyxilumMcp.git
@@ -18,98 +20,100 @@ cd NyxilumMcp
 npm install
 ```
 
-Потрібен зібраний NyxilumNode поруч (`../NyxilumLang` за замовчуванням,
-`dotnet build src/NyxilumLang` там) — або задай шлях явно:
+Needs a built NyxilumNode nearby (`../NyxilumLang` by default,
+`dotnet build src/NyxilumLang` there) — or set the path explicitly:
 
 ```bash
 # Linux/Mac
-export NX_NODE_PATH=/шлях/до/NyxilumLang   # .exe на Windows, .dll — тоді запускається через `dotnet`
-# або
-export NX_ECOSYSTEM_ROOT=/шлях/до/NyxilumLang
+export NX_NODE_PATH=/path/to/NyxilumLang   # .exe on Windows, .dll — then runs via `dotnet`
+# or
+export NX_ECOSYSTEM_ROOT=/path/to/NyxilumLang
 ```
 
 ```powershell
 # Windows
-$env:NX_NODE_PATH = "C:\шлях\до\NyxilumLang.exe"
-# або
-$env:NX_ECOSYSTEM_ROOT = "C:\шлях\до\NyxilumLang"
+$env:NX_NODE_PATH = "C:\path\to\NyxilumLang.exe"
+# or
+$env:NX_ECOSYSTEM_ROOT = "C:\path\to\NyxilumLang"
 ```
 
-## Підключення (Claude Desktop / Claude Code)
+## Connecting (Claude Desktop / Claude Code)
 
 ```json
 {
   "mcpServers": {
     "nyxilum": {
       "command": "node",
-      "args": ["/шлях/до/NyxilumMcp/src/server.js"]
+      "args": ["/path/to/NyxilumMcp/src/server.js"]
     }
   }
 }
 ```
 
-## Інструменти
+## Tools
 
-| Інструмент | Що робить |
+| Tool | What it does |
 |---|---|
-| `nyxilum_run` | Компілює й виконує код у пісочниці (окремий процес, timeout, ліміт GC-виділень) |
-| `nyxilum_check` | Лише лексер+парсер — перевіряє синтаксис БЕЗ виконання коду (дешевше й безпечніше за `nyxilum_run` для незавершеного коду) |
-| `nyxilum_lint` | Стильові попередження (довжина рядка, порожні блоки) — **не** перевірка синтаксису, завжди exitCode=0 |
-| `nyxilum_format` | Форматує код |
-| `nyxilum_version` | Версія знайденого NyxilumNode — заодно health check |
-| `nyxilum_docs` | GUIDE.md цілком або конкретна секція (`### `-заголовок) за назвою |
-| `nyxilum_dev_build` | `dotnet build` самого репозиторію NyxilumLang (розробка мови, НЕ пісочниться — джерело довірене, не довільний `.nx`-код) |
-| `nyxilum_dev_test` | `tests/run_all.sh` NyxilumLang проти щойно зібраного бінарника |
+| `nyxilum_run` | Compiles and runs code in a sandbox (separate process, timeout, GC-allocation limit) |
+| `nyxilum_check` | Lexer+parser only — checks syntax WITHOUT running the code (cheaper and safer than `nyxilum_run` for unfinished code) |
+| `nyxilum_lint` | Style warnings (line length, empty blocks) — **not** a syntax check, always exitCode=0 |
+| `nyxilum_format` | Formats code |
+| `nyxilum_version` | Version of the NyxilumNode found — doubles as a health check |
+| `nyxilum_docs` | GUIDE.md in full, or a specific section (by `### ` heading name) |
+| `nyxilum_dev_build` | `dotnet build` of the NyxilumLang repo itself (language development, NOT sandboxed — trusted source, not arbitrary `.nx` code) |
+| `nyxilum_dev_test` | NyxilumLang's `tests/run_all.sh` against the freshly built binary |
 
-## Безпека виконання (`nyxilum_run`)
+## Execution security (`nyxilum_run`)
 
-- Код НІКОЛИ не потрапляє в shell/argv як текст — завжди пишеться у
-  власний тимчасовий файл, шлях до якого передається як звичайний
-  аргумент процесу (`execFile`, без `shell: true`).
-- Процесний `timeout` (типово 10с, максимум 60с) — єдиний реальний
-  захист від `while (true) {}` без виділень пам'яті: `NX_GC_MAX_OBJECTS`
-  рахує лише NyxilumLang-виділення (масиви/структури/мапи), а не ітерації
-  циклу самі по собі.
-- `env` — allowlist (`PATH`, `SystemRoot`, `TEMP`, `DOTNET_ROOT` тощо),
-  не весь `process.env` цього серверного процесу.
-- `NX_SANDBOX=1` (фіксовано, не залежить від вхідних аргументів
-  інструмента) — файловий I/O обмежується тимчасовою текою запуску,
-  мережа (`httpGet`/`httpServer`/`wsConnect` тощо) й читання змінних
-  середовища (`osEnv`) повністю заборонені. Потребує NyxilumNode з
-  підтримкою `NX_SANDBOX` (див. [NyxilumLang README](https://github.com/Faneraiy14/NyxilumLang#пісочниця-для-ненадійного-коду));
-  зі старішим бінарником прапорець просто ігнорується.
-- Вивід (`stdout`/`stderr`) обрізається до 32 КБ на потік — цикл, що
-  друкує мільйони рядків, не заповнить контекст відповіді.
-- Тимчасова тека видаляється в `finally` завжди, навіть при таймауті.
+- Code NEVER ends up in the shell/argv as text — it's always written to
+  its own temp file, whose path is passed as a normal process argument
+  (`execFile`, without `shell: true`).
+- A process `timeout` (10s by default, 60s max) is the only real
+  protection against `while (true) {}` with no allocations:
+  `NX_GC_MAX_OBJECTS` only counts NyxilumLang allocations (arrays/structs/maps),
+  not loop iterations by themselves.
+- `env` is an allowlist (`PATH`, `SystemRoot`, `TEMP`, `DOTNET_ROOT`, etc.),
+  not the whole `process.env` of this server process.
+- `NX_SANDBOX=1` (fixed, doesn't depend on the tool's input arguments) —
+  file I/O is restricted to the run's temp folder, and network
+  (`httpGet`/`httpServer`/`wsConnect`, etc.) and reading environment
+  variables (`osEnv`) are completely forbidden. Requires a NyxilumNode
+  build with `NX_SANDBOX` support (see the
+  [NyxilumLang README](https://github.com/Faneraiy14/NyxilumLang#sandbox-for-untrusted-code));
+  with an older binary the flag is simply ignored.
+- Output (`stdout`/`stderr`) is truncated to 32 KB per stream — a loop that
+  prints millions of lines won't fill up the response context.
+- The temp folder is always removed in a `finally`, even on timeout.
 
-`RunFile` в Nx.cs пише `Runtime Error:`/`Parse Error:` у **stdout**
-(не stderr) і завершується з `exitCode=1` — це поведінка самого
-NyxilumNode, не цього сервера; кожен інструмент явно зазначає це в описі.
+`RunFile` in Nx.cs writes `Runtime Error:`/`Parse Error:` to **stdout**
+(not stderr) and exits with `exitCode=1` — that's NyxilumNode's own
+behavior, not this server's; every tool explicitly notes this in its
+description.
 
-### `nyxilum_dev_build`/`nyxilum_dev_test` — інша модель довіри
+### `nyxilum_dev_build`/`nyxilum_dev_test` — a different trust model
 
-Ці два НЕ пісочняться (немає `NX_SANDBOX`, немає env-allowlist, немає
-тимчасового файлу з кодом): вони запускають `dotnet build`/`tests/run_all.sh`
-над самим репозиторієм NyxilumLang, а не над довільним `.nx`-кодом від
-виклику. Викликач не передає жодного тексту, який міг би потрапити в
-команду — лише опційні `configuration`/`timeout_ms`. Призначені для
-розробки самої мови (зміна C#-коду VM/компілятора), не для перевірки
-недовіреного коду — для того лишаються `nyxilum_run`/`nyxilum_check`.
+These two are NOT sandboxed (no `NX_SANDBOX`, no env allowlist, no
+temp file with code): they run `dotnet build`/`tests/run_all.sh`
+on the NyxilumLang repo itself, not on arbitrary `.nx` code from the
+call. The caller passes no text that could end up in the command —
+only optional `configuration`/`timeout_ms`. Meant for developing
+the language itself (changing the VM's/compiler's C# code), not for
+checking untrusted code — that's what `nyxilum_run`/`nyxilum_check` are for.
 
-## Тести
+## Tests
 
 ```bash
 npm test
 ```
 
-18 перевірок: `smoke.mjs` викликає обробники напряму (успішний запуск,
-необроблений `throw`, таймаут нескінченного циклу, `gc_max_objects`,
-обрізання великого виводу, стійкість до shell-метасимволів у коді,
-`nyxilum_check` (проходить/ловить синтаксичну помилку/НЕ виконує код),
-відсутність витоку тимчасових директорій), `transport.mjs` — те саме
-через РЕАЛЬНИЙ MCP-протокол (`StdioClientTransport` + `Client`), не
-лише прямі виклики функцій.
+18 checks: `smoke.mjs` calls the handlers directly (successful run,
+unhandled `throw`, infinite-loop timeout, `gc_max_objects`,
+large-output truncation, resilience to shell metacharacters in the code,
+`nyxilum_check` (passes/catches a syntax error/does NOT run the code),
+no temp-directory leaks), `transport.mjs` — the same thing but
+through the REAL MCP protocol (`StdioClientTransport` + `Client`), not
+just direct function calls.
 
-## Ліцензія
+## License
 
 MIT — Faneraiy14.
