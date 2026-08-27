@@ -88,7 +88,10 @@ test('nyxilum_docs: повертає GUIDE.md цілком', async () => {
 });
 
 test('nyxilum_docs: фільтрація за секцією', async () => {
-    const result = await nyxilumDocs({ section: 'Мапи' });
+    // GUIDE.md перекладено на англійську (README/GUIDE тепер англомовні
+    // з README.uk.md/GUIDE.uk.md поруч) - заголовок секції тепер
+    // "Maps/Dictionaries", а не "Мапи".
+    const result = await nyxilumDocs({ section: 'Maps' });
     assert.equal(result.success, true);
     assert.match(result.content, /newMap/);
 });
