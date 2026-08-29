@@ -21,8 +21,8 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { StringDecoder } from 'node:string_decoder';
 import { resolveNyxilumNode } from './locate.js';
+import { truncateUtf8 } from './text-truncate.js';
 
 export const MAX_OUTPUT_BYTES = 32 * 1024;
 const ENV_ALLOWLIST = ['SystemRoot', 'PATH', 'Path', 'TEMP', 'TMP', 'ProgramFiles', 'ProgramFiles(x86)', 'DOTNET_ROOT'];
@@ -35,22 +35,8 @@ function baseEnv() {
     return env;
 }
 
-// buf.subarray(0, N).toString('utf8') різав би "наосліп" по байтах - для
-// кирилиці (мова явно підтримує "кирилиця в іменах", і виведений текст
-// зазвичай теж українською) N часто потрапляє ВСЕРЕДИНУ 2-байтового
-// символу, і toString() підставляє "�" (replacement character) замість
-// того, щоб просто відкинути недописаний хвіст. StringDecoder.write()
-// буферизує незавершену послідовність байтів на кінці замість того, щоб
-// її "розпакувати" в replacement character - саме те, що треба для
-// обрізання показу, а не для точного розбору потоку.
 export function truncate(text) {
-    const buf = Buffer.from(text ?? '', 'utf8');
-    if (buf.length <= MAX_OUTPUT_BYTES) return { text: text ?? '', truncated: false };
-    const safeText = new StringDecoder('utf8').write(buf.subarray(0, MAX_OUTPUT_BYTES));
-    return {
-        text: safeText + `\n…[обрізано, було ${buf.length} байт]`,
-        truncated: true,
-    };
+    return truncateUtf8(text, MAX_OUTPUT_BYTES);
 }
 
 /**

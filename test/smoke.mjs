@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { nyxilumRun, nyxilumLint, nyxilumCheck, nyxilumDocs, nyxilumVersion } from '../src/tools.js';
 import { nyxilumDevBuild, nyxilumDevTest } from '../src/dev.js';
 import { truncate, MAX_OUTPUT_BYTES } from '../src/run.js';
+import { truncate as truncateDev, MAX_OUTPUT_BYTES as MAX_OUTPUT_BYTES_DEV } from '../src/dev.js';
 
 async function countTempDirs() {
     const entries = await readdir(tmpdir()).catch(() => []);
@@ -71,6 +72,13 @@ test('truncate(): точна межа обрізання ВСЕРЕДИНІ 2-б
     assert.equal(result.truncated, true);
     assert.equal(result.text.includes('�'), false, 'обрізаний текст не повинен містити replacement character');
     assert.ok(result.text.startsWith('a'.repeat(MAX_OUTPUT_BYTES - 1)));
+});
+
+test('dev.js truncate(): той самий фікс, той самий тест - обидва run.js/dev.js колись мали окремі копії truncate() з однаковим багом', () => {
+    const text = 'a'.repeat(MAX_OUTPUT_BYTES_DEV - 1) + 'Ж';
+    const result = truncateDev(text);
+    assert.equal(result.truncated, true);
+    assert.equal(result.text.includes('�'), false);
 });
 
 test('nyxilum_run: великий кириличний вивід реального прогону теж без replacement character (наскрізна перевірка)', async () => {

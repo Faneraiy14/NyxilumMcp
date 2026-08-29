@@ -9,8 +9,9 @@
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { resolveNyxilumNode } from './locate.js';
+import { truncateUtf8 } from './text-truncate.js';
 
-const MAX_OUTPUT_BYTES = 64 * 1024;
+export const MAX_OUTPUT_BYTES = 64 * 1024;
 
 function ecosystemRoot() {
     // Той самий дефолт, що й у locate.js/tools.js: "NyxilumEcosystem" -
@@ -18,13 +19,8 @@ function ecosystemRoot() {
     return process.env.NX_ECOSYSTEM_ROOT || join(import.meta.dirname, '..', '..', 'NyxilumLang');
 }
 
-function truncate(text) {
-    const buf = Buffer.from(text ?? '', 'utf8');
-    if (buf.length <= MAX_OUTPUT_BYTES) return { text: text ?? '', truncated: false };
-    return {
-        text: buf.subarray(0, MAX_OUTPUT_BYTES).toString('utf8') + `\n…[обрізано, було ${buf.length} байт]`,
-        truncated: true,
-    };
+export function truncate(text) {
+    return truncateUtf8(text, MAX_OUTPUT_BYTES);
 }
 
 function clamp(value, min, max) {
