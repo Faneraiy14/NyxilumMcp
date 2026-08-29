@@ -114,6 +114,15 @@ no temp-directory leaks), `transport.mjs` — the same thing but
 through the REAL MCP protocol (`StdioClientTransport` + `Client`), not
 just direct function calls.
 
+## Updating
+
+No separate build/publish step for the MCP server itself — `claude mcp add`
+points straight at this checkout's `src/server.js`, so updating it is just
+`git pull && npm install`, taking effect on the next new Claude Code
+session. Separately, if NyxilumLang itself has moved on, rebuild the
+NyxilumNode binary this server talks to (`dotnet build src/NyxilumLang` in
+the NyxilumLang checkout) — the two update independently.
+
 ## License
 
 MIT — Faneraiy14.
