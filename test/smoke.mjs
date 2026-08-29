@@ -4,6 +4,7 @@ import { readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { nyxilumRun, nyxilumLint, nyxilumCheck, nyxilumDocs, nyxilumVersion } from '../src/tools.js';
 import { nyxilumDevBuild, nyxilumDevTest } from '../src/dev.js';
+import { truncate, MAX_OUTPUT_BYTES } from '../src/run.js';
 
 async function countTempDirs() {
     const entries = await readdir(tmpdir()).catch(() => []);
@@ -49,6 +50,36 @@ test('nyxilum_run: великий вивід обрізається (truncated),
     });
     assert.equal(result.truncated, true);
     assert.ok(Buffer.byteLength(result.stdout, 'utf8') < 40 * 1024);
+});
+
+test('truncate(): точна межа обрізання ВСЕРЕДИНІ 2-байтового символу UTF-8 не дає replacement character', () => {
+    // Реальний баг, знайдений живцем: обрізання по MAX_OUTPUT_BYTES раніше
+    // різало Buffer напряму по байтах (buf.subarray(0, N).toString('utf8'))
+    // - кирилиця в UTF-8 займає 2 байти на символ, тож коли межа потрапляє
+    // ВСЕРЕДИНУ символу, toString() підставляє "�" (replacement character)
+    // замість того, щоб просто відкинути недописаний хвіст. Мова явно
+    // підтримує кирилицю в іменах, і виведений текст зазвичай теж
+    // українською - цілком реальний сценарій, не надуманий.
+    //
+    // Точна побудова тексту, а не сподівання на природну межу реального
+    // прогону (та виявилась недетермінованою - залежить від довжини
+    // рядка, який print() повторює): (MAX_OUTPUT_BYTES - 1) ASCII-байтів,
+    // тоді один 2-байтовий кириличний символ "Ж" - разом MAX_OUTPUT_BYTES+1
+    // байт, і межа обрізання гарантовано впаде рівно ПОСЕРЕД байтів "Ж".
+    const text = 'a'.repeat(MAX_OUTPUT_BYTES - 1) + 'Ж';
+    const result = truncate(text);
+    assert.equal(result.truncated, true);
+    assert.equal(result.text.includes('�'), false, 'обрізаний текст не повинен містити replacement character');
+    assert.ok(result.text.startsWith('a'.repeat(MAX_OUTPUT_BYTES - 1)));
+});
+
+test('nyxilum_run: великий кириличний вивід реального прогону теж без replacement character (наскрізна перевірка)', async () => {
+    const result = await nyxilumRun({
+        code: 'func main() { var i = 0\n while i < 5000 { print("Привіт, це кириличний рядок для перевірки обрізання виводу!")\n i = i + 1 } }',
+        timeout_ms: 15000,
+    });
+    assert.equal(result.truncated, true);
+    assert.equal(result.stdout.includes('�'), false);
 });
 
 test('nyxilum_run: код із shell-метасимволами виконується як текст, не як команда', async () => {
