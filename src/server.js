@@ -4,7 +4,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { nyxilumRun, nyxilumLint, nyxilumFormat, nyxilumCheck, nyxilumVersion, nyxilumDocs } from './tools.js';
+import { nyxilumRun, nyxilumLint, nyxilumFormat, nyxilumCheck, nyxilumVersion, nyxilumDocs, nyxilumReplStart, nyxilumReplEval, nyxilumReplStop } from './tools.js';
 import { nyxilumDevBuild, nyxilumDevTest } from './dev.js';
 
 const server = new McpServer({ name: 'nyxilum-mcp', version: '0.1.0' });
@@ -101,6 +101,62 @@ server.registerTool(
     async (args) => {
         const result = await nyxilumDocs(args);
         return { content: [{ type: 'text', text: result.success ? result.content : `Помилка: ${result.error}` }] };
+    }
+);
+
+server.registerTool(
+    'nyxilum_repl_start',
+    {
+        title: 'Почати REPL-сесію NyxilumLang',
+        description:
+            'Піднімає довготривалу пісочницю-сесію (окремий процес nx REPL, NX_SANDBOX=1), де var/func лишаються видимими ' +
+            'між послідовними викликами nyxilum_repl_eval - на відміну від nyxilum_run, де кожен виклик стартує з чистого стану. ' +
+            'Корисно для покрокового дослідження ("спробуй, подивись результат, підправ") замість переписування всього скрипта щоразу. ' +
+            'Поверне session_id для nyxilum_repl_eval/nyxilum_repl_stop. Максимум 5 сесій одночасно; неактивна 10 хв - завершується сама. ' +
+            'ЗАВЖДИ заверши сесію через nyxilum_repl_stop, коли вона більше не потрібна.',
+        inputSchema: {},
+    },
+    async () => {
+        const result = await nyxilumReplStart();
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+);
+
+server.registerTool(
+    'nyxilum_repl_eval',
+    {
+        title: 'Виконати код у REPL-сесії NyxilumLang',
+        description:
+            'Виконує код в існуючій сесії від nyxilum_repl_start - var/func з попередніх викликів у ЦІЙ САМІЙ сесії лишаються видимими. ' +
+            'ОБМЕЖЕННЯ: REPL читає stdin рядок за рядком, тож переноси рядків у code замінюються на пробіли перед відправкою - ' +
+            'багаторядкові func {...}/struct {...} працюють (фігурні дужки не залежать від переносів рядків), АЛЕ // -коментарі ' +
+            'НЕ підтримуються в багаторядковому code (коментар "з’їсть" усе, що йде після нього на тому самому сплющеному рядку) - ' +
+            'просто уникай // усередині code, переданого сюди. Якщо виконання не завершується за timeout_ms (напр. нескінченний ' +
+            'цикл), сесія автоматично завершується - почни нову через nyxilum_repl_start.',
+        inputSchema: {
+            session_id: z.string().describe('ID сесії від nyxilum_repl_start'),
+            code: z.string().describe('Код NyxilumLang для виконання в цій сесії'),
+            timeout_ms: timeoutSchema,
+        },
+    },
+    async (args) => {
+        const result = await nyxilumReplEval(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+);
+
+server.registerTool(
+    'nyxilum_repl_stop',
+    {
+        title: 'Завершити REPL-сесію NyxilumLang',
+        description: 'Завершує процес сесії й прибирає її тимчасову теку. Виклич, коли сесія від nyxilum_repl_start більше не потрібна.',
+        inputSchema: {
+            session_id: z.string().describe('ID сесії від nyxilum_repl_start'),
+        },
+    },
+    async (args) => {
+        const result = await nyxilumReplStop(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
 );
 

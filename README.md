@@ -62,6 +62,9 @@ $env:NX_ECOSYSTEM_ROOT = "C:\path\to\NyxilumLang"
 | `nyxilum_docs` | GUIDE.md in full, or a specific section (by `### ` heading name) |
 | `nyxilum_dev_build` | `dotnet build` of the NyxilumLang repo itself (language development, NOT sandboxed — trusted source, not arbitrary `.nx` code) |
 | `nyxilum_dev_test` | NyxilumLang's `tests/run_all.sh` against the freshly built binary |
+| `nyxilum_repl_start` | Starts a long-lived sandboxed REPL session — `var`/`func` stay visible across calls, unlike `nyxilum_run` |
+| `nyxilum_repl_eval` | Runs code in an existing REPL session |
+| `nyxilum_repl_stop` | Ends a REPL session and cleans up its temp folder |
 
 ## Execution security (`nyxilum_run`)
 
@@ -90,6 +93,47 @@ $env:NX_ECOSYSTEM_ROOT = "C:\path\to\NyxilumLang"
 behavior, not this server's; every tool explicitly notes this in its
 description.
 
+### `nyxilum_repl_*` — persistent state, same sandbox
+
+`nyxilum_run` starts a brand-new process every call — no memory between
+calls. The `nyxilum_repl_*` tools instead keep one `nx` REPL process alive
+across multiple `nyxilum_repl_eval` calls, so a `var`/`func` declared in
+one call is still visible in the next — useful for stepping through an
+exploration ("try this, look at the result, adjust") instead of
+re-writing the whole accumulated script every time. Same sandbox as
+`nyxilum_run` (`NX_SANDBOX=1`, env allowlist, own temp working directory
+per session, output truncated to 32 KB).
+
+Two things that follow directly from the REPL being a real, long-lived
+process reading stdin line by line, not a one-shot file:
+
+- **Newlines in `code` are flattened to spaces before being sent.** The
+  REPL reads one `Console.ReadLine()` per statement — a `func` body split
+  across lines breaks it (`Error: expected '}' on line 1`, verified live)
+  the moment a `\n` is written to its stdin mid-declaration. Braces don't
+  care about line breaks, so multi-line `func {...}`/`struct {...}` still
+  work fine once flattened — but `//` line comments do NOT survive
+  flattening (the comment would silently eat everything after it on the
+  now-single line), so avoid `//` inside multi-line `code` passed here.
+- **A timed-out `nyxilum_repl_eval` kills the session.** There's no safe
+  way to keep waiting on a process that might be stuck in an infinite
+  loop indefinitely, so a call that doesn't respond within `timeout_ms`
+  terminates the session immediately (`sessionKilled: true` in the
+  response) — start a new one with `nyxilum_repl_start`.
+
+Reading the response reliably (not just "wait a bit and read stdout")
+needed its own protocol: right after the caller's code, the session
+writes a second line — `print()` of a random one-time marker — and reads
+stdout until that marker shows up in the buffer. Everything before it,
+minus the REPL's own `"> "` prompt (stripped positionally, as a fixed
+2-byte suffix right before the marker — not a blind find-and-replace, so
+legitimate output containing `"> "` itself, e.g. `print("a > b")`, comes
+through untouched) is the real output of the caller's code.
+
+Sessions are capped at 5 concurrent and auto-close after 10 minutes idle
+— always call `nyxilum_repl_stop` when done with one rather than relying
+on the idle timeout.
+
 ### `nyxilum_dev_build`/`nyxilum_dev_test` — a different trust model
 
 These two are NOT sandboxed (no `NX_SANDBOX`, no env allowlist, no
@@ -106,13 +150,17 @@ checking untrusted code — that's what `nyxilum_run`/`nyxilum_check` are for.
 npm test
 ```
 
-18 checks: `smoke.mjs` calls the handlers directly (successful run,
+32 checks: `smoke.mjs` calls the handlers directly (successful run,
 unhandled `throw`, infinite-loop timeout, `gc_max_objects`,
 large-output truncation, resilience to shell metacharacters in the code,
 `nyxilum_check` (passes/catches a syntax error/does NOT run the code),
-no temp-directory leaks), `transport.mjs` — the same thing but
-through the REAL MCP protocol (`StdioClientTransport` + `Client`), not
-just direct function calls.
+no temp-directory leaks), `repl.mjs` (state persists across calls within
+one session, multi-line `func` flattening, legitimate `"> "` output
+surviving intact, an error not killing the session, two sessions not
+seeing each other's variables, an infinite loop's timeout killing the
+session cleanly, no temp-directory leaks), `transport.mjs` — the same
+things but through the REAL MCP protocol (`StdioClientTransport` +
+`Client`), not just direct function calls.
 
 ## Updating
 

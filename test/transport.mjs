@@ -24,7 +24,7 @@ async function withClient(fn) {
     }
 }
 
-test('tools/list повертає всі 8 зареєстрованих інструментів', async () => {
+test('tools/list повертає всі 11 зареєстрованих інструментів', async () => {
     await withClient(async (client) => {
         const { tools } = await client.listTools();
         const names = tools.map((t) => t.name).sort();
@@ -35,6 +35,9 @@ test('tools/list повертає всі 8 зареєстрованих інст
             'nyxilum_docs',
             'nyxilum_format',
             'nyxilum_lint',
+            'nyxilum_repl_eval',
+            'nyxilum_repl_start',
+            'nyxilum_repl_stop',
             'nyxilum_run',
             'nyxilum_version',
         ]);
@@ -62,6 +65,29 @@ test('tools/call nyxilum_run через реальний MCP-протокол', 
         const payload = JSON.parse(result.content[0].text);
         assert.equal(payload.success, true);
         assert.match(payload.stdout, /з протоколу/);
+    });
+});
+
+test('tools/call nyxilum_repl_start/eval/stop через реальний MCP-протокол', async () => {
+    await withClient(async (client) => {
+        const startResult = await client.callTool({ name: 'nyxilum_repl_start', arguments: {} });
+        const startPayload = JSON.parse(startResult.content[0].text);
+        assert.equal(startPayload.success, true);
+
+        const evalResult = await client.callTool({
+            name: 'nyxilum_repl_eval',
+            arguments: { session_id: startPayload.sessionId, code: 'var y = 41\nprint(y + 1)' },
+        });
+        const evalPayload = JSON.parse(evalResult.content[0].text);
+        assert.equal(evalPayload.success, true);
+        assert.match(evalPayload.output, /42/);
+
+        const stopResult = await client.callTool({
+            name: 'nyxilum_repl_stop',
+            arguments: { session_id: startPayload.sessionId },
+        });
+        const stopPayload = JSON.parse(stopResult.content[0].text);
+        assert.equal(stopPayload.success, true);
     });
 });
 

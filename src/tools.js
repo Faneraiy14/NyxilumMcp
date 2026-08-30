@@ -6,6 +6,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { runNyxilumNode } from './run.js';
 import { resolveNyxilumNode } from './locate.js';
+import { startReplSession, evalInSession, stopSession } from './repl.js';
 
 function ecosystemRoot() {
     // Той самий дефолт, що й у locate.js: "NyxilumEcosystem" — стара назва,
@@ -124,4 +125,21 @@ function splitBySections(markdown) {
 
 export function nyxilumNodeHealthPath() {
     return resolveNyxilumNode().path;
+}
+
+// REPL-сесія: на відміну від nyxilum_run (окремий процес, чистий стан на
+// кожному виклику), тут var/func лишаються видимими між послідовними
+// викликами nyxilum_repl_eval - для дослідницьких/пошагових сценаріїв
+// ("спробуй так, подивись на результат, підправ"), де переписувати весь
+// накопичений скрипт заново на кожен крок незручно.
+export async function nyxilumReplStart() {
+    return startReplSession();
+}
+
+export async function nyxilumReplEval({ session_id, code, timeout_ms }) {
+    return evalInSession(session_id, code, timeout_ms ?? 10_000);
+}
+
+export async function nyxilumReplStop({ session_id }) {
+    return stopSession(session_id);
 }
