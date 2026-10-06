@@ -172,6 +172,16 @@ npm test
 (`dotnet build src/NyxilumLang` у клоні NyxilumLang) - ці двоє
 оновлюються незалежно одне від одного.
 
+## Docker
+
+```bash
+docker build -t nyxilum-mcp .
+docker run -i --rm nyxilum-mcp
+```
+
+Сервер працює з MCP через stdio, тож `-i` обов'язковий. Потрібно: нічого: `nx` (NyxilumNode v1.8.3) уже всередині образу.
+У конфігу MCP-клієнта: `"command": "docker"` з тими самими аргументами.
+
 ## Ліцензія
 
 MIT — Faneraiy14.

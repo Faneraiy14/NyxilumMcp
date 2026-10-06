@@ -171,6 +171,16 @@ session. Separately, if NyxilumLang itself has moved on, rebuild the
 NyxilumNode binary this server talks to (`dotnet build src/NyxilumLang` in
 the NyxilumLang checkout) — the two update independently.
 
+## Docker
+
+```bash
+docker build -t nyxilum-mcp .
+docker run -i --rm nyxilum-mcp
+```
+
+The server speaks MCP over stdio, so keep `-i`. Needs: nothing - `nx` (NyxilumNode v1.8.3) is already inside the image.
+In an MCP client config use `"command": "docker"` with the same arguments.
+
 ## License
 
 MIT — Faneraiy14.
